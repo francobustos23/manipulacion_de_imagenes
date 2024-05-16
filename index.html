@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Manipulation</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .title {
+            font-size: 1.5em;
+            margin-top: 20px;
+        }
+        img {
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">Original Image</div>
+        <img id="originalImage" src="./bicho.jpg" alt="Original Image">
+        
+        <div class="title">Resized Image using Function 1</div>
+        <canvas id="resizedCanvas1"></canvas>
+        
+        <div class="title">Resized Image using Function 2</div>
+        <canvas id="resizedCanvas2"></canvas>
+        
+        <div class="title">Cropped Image</div>
+        <canvas id="croppedCanvas"></canvas>
+        
+        <div class="title">Mirrored Image</div>
+        <canvas id="mirroredCanvas"></canvas>
+    </div>
+
+    <script>
+        async function loadImage(url) {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.src = url;
+            await new Promise((resolve) => {
+                img.onload = resolve;
+            });
+            return img;
+        }
+
+        async function main() {
+            const imageUrl = './bicho.jpg'; // Use the local image
+            const img = await loadImage(imageUrl);
+            
+            const tensor = tf.browser.fromPixels(img).toFloat().div(tf.scalar(255));
+
+            // Function 1: Resize using nearest neighbor
+            const resizedTensor1 = tf.image.resizeNearestNeighbor(tensor, [150, 150]);
+            const resizedCanvas1 = document.getElementById('resizedCanvas1');
+            await tf.browser.toPixels(resizedTensor1, resizedCanvas1);
+
+            // Function 2: Resize using bilinear
+            const resizedTensor2 = tf.image.resizeBilinear(tensor, [150, 150]);
+            const resizedCanvas2 = document.getElementById('resizedCanvas2');
+            await tf.browser.toPixels(resizedTensor2, resizedCanvas2);
+
+            // Crop the image
+            const croppedTensor = tensor.slice([0, 0, 0], [100, 100, 3]);
+            const croppedCanvas = document.getElementById('croppedCanvas');
+            await tf.browser.toPixels(croppedTensor, croppedCanvas);
+
+            // Mirror the image horizontally (flipping)
+            const mirroredTensor = tensor.reverse(1);
+            const mirroredCanvas = document.getElementById('mirroredCanvas');
+            await tf.browser.toPixels(mirroredTensor, mirroredCanvas);
+        }
+
+        main();
+    </script>
+</body>
+</html>
