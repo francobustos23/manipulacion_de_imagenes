@@ -3,81 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Manipulation</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <style>
-        .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-        }
-        .title {
-            font-size: 1.5em;
-            margin-top: 20px;
-        }
-        img {
-            max-width: 100%;
-        }
-    </style>
+    <title>Image Processing</title>
 </head>
 <body>
-    <div class="container">
-        <div class="title">Original Image</div>
-        <img id="originalImage" src="./bicho.jpg" alt="Original Image">
-        
-        <div class="title">Resized Image using Function 1</div>
-        <canvas id="resizedCanvas1"></canvas>
-        
-        <div class="title">Resized Image using Function 2</div>
-        <canvas id="resizedCanvas2"></canvas>
-        
-        <div class="title">Cropped Image</div>
-        <canvas id="croppedCanvas"></canvas>
-        
-        <div class="title">Mirrored Image</div>
-        <canvas id="mirroredCanvas"></canvas>
+    <h1>Image Processing</h1>
+    <div>
+        <h2>Original Image</h2>
+        <img id="originalImage" src="pikachu.jpg" alt="Original Image">
+    </div>
+    <div>
+        <h2>Processed Image</h2>
+        <canvas id="processedCanvas" width="400" height="400"></canvas>
+    </div>
+    <div>
+        <button onclick="processImage()">Process Image</button>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script>
-        async function loadImage(url) {
-            const img = new Image();
-            img.crossOrigin = 'Anonymous';
-            img.src = url;
-            await new Promise((resolve) => {
-                img.onload = resolve;
-            });
-            return img;
-        }
+        async function processImage() {
+            const originalImage = document.getElementById('originalImage');
+            const canvas = document.getElementById('processedCanvas');
+            const ctx = canvas.getContext('2d');
 
-        async function main() {
-            const imageUrl = './bicho.jpg'; // Use the local image
-            const img = await loadImage(imageUrl);
+            // Convertir la imagen a tensor
+            const tensor = tf.browser.fromPixels(originalImage);
             
-            const tensor = tf.browser.fromPixels(img).toFloat().div(tf.scalar(255));
+            // Normalizar los valores de píxel al rango [0, 1]
+            const normalizedTensor = tensor.toFloat().div(tf.scalar(255));
 
-            // Function 1: Resize using nearest neighbor
-            const resizedTensor1 = tf.image.resizeNearestNeighbor(tensor, [150, 150]);
-            const resizedCanvas1 = document.getElementById('resizedCanvas1');
-            await tf.browser.toPixels(resizedTensor1, resizedCanvas1);
+            // Expande el tensor a rango 4
+            const expandedTensor = normalizedTensor.expandDims();
 
-            // Function 2: Resize using bilinear
-            const resizedTensor2 = tf.image.resizeBilinear(tensor, [150, 150]);
-            const resizedCanvas2 = document.getElementById('resizedCanvas2');
-            await tf.browser.toPixels(resizedTensor2, resizedCanvas2);
+            // Girar la imagen
+            const flippedTensor = tf.image.flipLeftRight(expandedTensor);
 
-            // Crop the image
-            const croppedTensor = tensor.slice([0, 0, 0], [100, 100, 3]);
-            const croppedCanvas = document.getElementById('croppedCanvas');
-            await tf.browser.toPixels(croppedTensor, croppedCanvas);
+            // Recortar y redimensionar la imagen
+            const croppedResizedTensor = tf.image.cropAndResize(flippedTensor, [[0, 0, 1, 1]], [0], [200, 200]);
 
-            // Mirror the image horizontally (flipping)
-            const mirroredTensor = tensor.reverse(1);
-            const mirroredCanvas = document.getElementById('mirroredCanvas');
-            await tf.browser.toPixels(mirroredTensor, mirroredCanvas);
+            // Mostrar la imagen procesada en el canvas
+            await tf.browser.toPixels(croppedResizedTensor.squeeze(), canvas);
         }
-
-        main();
     </script>
 </body>
 </html>
